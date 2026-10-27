@@ -21,7 +21,9 @@ public class pathingTest extends OpMode{
         //SHOOT > ATTEMPT TO SCORE THE ARTIFACT
         DRIVE_STARTPOS_SHOOT_POS,
         SHOOT_PRELOAD,
-        DRIVE_SHOOTPOS_TURNPOS
+        DRIVE_SHOOTPOS_TURNPOS,
+        DRIVE_TURNPOS_MOVEPOS,
+        DRIVE_MOVEPOS_PARKPOS
 
     }
 
@@ -29,9 +31,12 @@ public class pathingTest extends OpMode{
 
     private final Pose startpose = new Pose(56, 8, Math.toRadians(90));
     private final Pose shootpose = new Pose(55.59690799396682, 33.7609822775264, Math.toRadians(90));
-    private final Pose turnPose = new Pose(13.765837104072398, 17.75419494720965, Math. toRadians(180));
+    private final Pose turnPose = new Pose(7.7, 18.181042609351426, Math. toRadians(180));
 
-    private PathChain driveStartPosShootPos, driveShootPosTurnPos;
+    private final Pose movepose = new Pose(7.576546003016591, 99.92236990950225, Math.toRadians(90));
+    private final Pose parkPose = new Pose(8.14328808446456, 99.62443438914025, Math.toRadians(0));
+
+    private PathChain driveStartPosShootPos, driveShootPosTurnPos, driveTurnPosMovePos, driveMovePosParkPos;
 
     public void buildPaths(){
         //put in coordinates for starting pose > ending pose
@@ -41,7 +46,18 @@ public class pathingTest extends OpMode{
                 .build();
         driveShootPosTurnPos = follower.pathBuilder()
                 .addPath(new BezierLine(shootpose, turnPose))
-                .setLinearHeadingInterpolation()
+                .setLinearHeadingInterpolation(shootpose.getHeading(), turnPose.getHeading())
+                .build();
+                //TIMESTAMP: 25:26
+        driveTurnPosMovePos = follower.pathBuilder()
+                .addPath(new BezierLine(turnPose, movepose))
+                .setLinearHeadingInterpolation(turnPose.getHeading(), movepose.getHeading())
+                .build();
+        driveMovePosParkPos = follower.pathBuilder()
+                .addPath(new BezierLine(movepose, parkPose))
+                .setLinearHeadingInterpolation(movepose.getHeading(), parkPose.getHeading())
+                .build();
+
     }
 
     public void statePathUpdate(){
@@ -52,12 +68,20 @@ public class pathingTest extends OpMode{
                 break;
             case SHOOT_PRELOAD:
                 //check if follower did its path
-                if (!follower.isBusy()){
+                //check if 5 seconds have elapsed
+                if (!follower.isBusy() && pathTimer.getElapsedTimeSeconds() > 5){
                     //TODO add logic to shooter
+                    follower.followPath(driveShootPosTurnPos,true);
+                    setPathState(PathState.DRIVE_SHOOTPOS_TURNPOS);
                     telemetry.addLine("Done Path 1");
                     //transition to next state
                 }
                 break;
+            case DRIVE_SHOOTPOS_TURNPOS:
+                //TURN
+                if (!follower.isBusy()){
+                    telemetry.addLine("Done Path 2");
+                }
             default:
                 telemetry.addLine("No State Commanded");
                 break;
