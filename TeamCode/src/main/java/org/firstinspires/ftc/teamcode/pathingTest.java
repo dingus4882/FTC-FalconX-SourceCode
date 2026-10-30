@@ -1,17 +1,20 @@
 package org.firstinspires.ftc.teamcode;
 
+
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
 import com.pedropathing.util.Timer;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
-@TeleOp
-public class pathingTest extends OpMode{
+@TeleOp(name = "pathingTest")
+
+public class pathingTest extends LinearOpMode{
     private Follower follower;
     private Timer pathTimer, opModeTimer;
 
@@ -38,7 +41,7 @@ public class pathingTest extends OpMode{
 
     private PathChain driveStartPosShootPos, driveShootPosTurnPos, driveTurnPosMovePos, driveMovePosParkPos;
 
-    public void buildPaths(){
+    private void buildPaths(){
         //put in coordinates for starting pose > ending pose
         driveStartPosShootPos = follower.pathBuilder()
                 .addPath(new BezierLine(startpose, shootpose))
@@ -60,7 +63,7 @@ public class pathingTest extends OpMode{
 
     }
 
-    public void statePathUpdate(){
+    private void statePathUpdate(){
         switch(pathState){
             case DRIVE_STARTPOS_SHOOT_POS:
                 follower.followPath(driveStartPosShootPos, true);
@@ -71,7 +74,7 @@ public class pathingTest extends OpMode{
                 //check if 5 seconds have elapsed
                 if (!follower.isBusy() && pathTimer.getElapsedTimeSeconds() > 5){
                     //TODO add logic to shooter
-                    follower.followPath(driveShootPosTurnPos,true);
+                    sleep(8000);
                     setPathState(PathState.DRIVE_SHOOTPOS_TURNPOS);
                     telemetry.addLine("Done Path 1");
                     //transition to next state
@@ -80,10 +83,16 @@ public class pathingTest extends OpMode{
             case DRIVE_SHOOTPOS_TURNPOS:
                 //TURN
                 if (!follower.isBusy()){
+                    follower.followPath(driveShootPosTurnPos, true);
                     setPathState(PathState.DRIVE_TURNPOS_MOVEPOS);
                     telemetry.addLine("Done Path 2");
                 }
-
+            case DRIVE_TURNPOS_MOVEPOS:
+                if (!follower.isBusy()){
+                    follower.followPath(driveTurnPosMovePos);
+                    setPathState(PathState.DRIVE_MOVEPOS_PARKPOS);
+                    telemetry.addLine("Done Path 3");
+                }
             default:
                 telemetry.addLine("No State Commanded");
                 break;
@@ -91,7 +100,7 @@ public class pathingTest extends OpMode{
         }
     }
 
-    public void setPathState(PathState newState){
+    private void setPathState(PathState newState){
         pathState = newState;
         pathTimer.resetTimer();
     }
@@ -99,7 +108,7 @@ public class pathingTest extends OpMode{
     //TIMESTAMP: 11:03
 
     @Override
-    public void init(){
+    public void runOpMode(){
         pathState = PathState.DRIVE_STARTPOS_SHOOT_POS;
         pathTimer = new Timer();
         opModeTimer = new Timer();
@@ -108,24 +117,28 @@ public class pathingTest extends OpMode{
 
         buildPaths();
         follower.setPose(startpose);
+        waitForStart();
+        if (opModeIsActive()) {
+            // Put run blocks here.
+            telemetry.update();
+            while (opModeIsActive()) {
+                follower.update();
+                statePathUpdate();
+
+                telemetry.addData("Path state", pathState.toString());
+                telemetry.addData("x", follower.getPose().getX());
+                telemetry.addData("y", follower.getPose().getY());
+                telemetry.addData("heading", follower.getPose().getHeading());
+                telemetry.addData("Path time", pathTimer.getElapsedTimeSeconds());
+                //Run IP address? http://192.168.43.1:8001/
+            }
+        }
 
     }
 
-    public void start(){
+    private void timer(){
         opModeTimer.resetTimer();
         setPathState(pathState);
     }
 
-    @Override
-    public void loop(){
-        follower.update();
-        statePathUpdate();
-
-        telemetry.addData("Path state", pathState.toString());
-        telemetry.addData("x", follower.getPose().getX());
-        telemetry.addData("y", follower.getPose().getY());
-        telemetry.addData("heading", follower.getPose().getHeading());
-        telemetry.addData("Path time", pathTimer.getElapsedTimeSeconds());
-        //Run IP address? http://192.168.43.1:8001/
-    }
 }
