@@ -80,8 +80,10 @@ public class pathingTest extends OpMode{
             case DRIVE_SHOOTPOS_TURNPOS:
                 //TURN
                 if (!follower.isBusy()){
+                    setPathState(PathState.DRIVE_TURNPOS_MOVEPOS);
                     telemetry.addLine("Done Path 2");
                 }
+
             default:
                 telemetry.addLine("No State Commanded");
                 break;
